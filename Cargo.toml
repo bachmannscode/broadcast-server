@@ -1,0 +1,10 @@
+[package]
+name = "broadcast_server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.43", default-features = false, features = [ "rt", "macros", "net", "io-util", "sync" ] }
+clap = { version = "4.5.30", default-features = false, features = [ "std", "derive" ] }
+log = { version = "0.4.25", default-features = false }
+env_logger = { version = "0.11.6", default-features = false }
