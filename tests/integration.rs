@@ -29,20 +29,34 @@ async fn broadcast_server() {
         "info".into(),
         env_logger::Target::Pipe(Box::new(WriteSender(tx))),
     );
-    let server_addr = "127.0.0.1:8888";
-    tokio::spawn(run(server_addr.parse().unwrap()));
+    let mut server_addr = "127.0.0.1:8888".to_string();
+    tokio::spawn(run(server_addr.as_str().parse().unwrap()));
     time::sleep(Duration::from_millis(50)).await;
 
     // Assert the initial server log.
-    assert_eq!(
-        "listening on port 8888\n",
-        std::str::from_utf8(&rx.try_iter().collect::<Vec<u8>>()).unwrap()
-    );
+    let initial_server_log = String::from_utf8(rx.try_iter().collect::<Vec<u8>>()).unwrap();
+    if "listening on port 8888\n" != initial_server_log {
+        // If this is entered, then the first server log included the fallback message.
+        let listening_log = initial_server_log
+            .split('.')
+            .last()
+            .unwrap()
+            .strip_prefix("\n")
+            .unwrap();
+        let port = listening_log
+            .split(' ')
+            .last()
+            .unwrap()
+            .strip_suffix("\n")
+            .unwrap();
+        server_addr = format!("127.0.0.1:{port}");
+        assert_eq!(format!("listening on port {port}\n"), listening_log);
+    }
 
     // Connect 3 clients and assert client output and server logs.
     let (alice_reader, mut alice_writer) = timeout(Duration::from_secs(2), async {
         loop {
-            match TcpStream::connect(server_addr).await {
+            match TcpStream::connect(&server_addr).await {
                 Ok(a) => break a,
                 Err(_) => {
                     sleep(Duration::from_millis(50)).await;
@@ -63,7 +77,7 @@ async fn broadcast_server() {
         &format!("connected 127.0.0.1 {alice_port}\n"),
         std::str::from_utf8(&rx.try_iter().collect::<Vec<u8>>()).unwrap()
     );
-    let (bob_reader, mut bob_writer) = TcpStream::connect(server_addr).await.unwrap().into_split();
+    let (bob_reader, mut bob_writer) = TcpStream::connect(&server_addr).await.unwrap().into_split();
     let bob_port = bob_reader.local_addr().unwrap().port();
     let mut bob_lines = BufReader::new(bob_reader).lines();
     assert_eq!(
@@ -74,7 +88,7 @@ async fn broadcast_server() {
         &format!("connected 127.0.0.1 {bob_port}\n"),
         std::str::from_utf8(&rx.try_iter().collect::<Vec<u8>>()).unwrap()
     );
-    let john = TcpStream::connect(server_addr).await.unwrap();
+    let john = TcpStream::connect(&server_addr).await.unwrap();
     let john_port = john.local_addr().unwrap().port();
     let mut john_lines = BufReader::new(john).lines();
     assert_eq!(
