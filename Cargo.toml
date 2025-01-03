@@ -8,3 +8,6 @@ tokio = { version = "1.43", default-features = false, features = [ "rt", "macros
 clap = { version = "4.5.30", default-features = false, features = [ "std", "derive" ] }
 log = { version = "0.4.25", default-features = false }
 env_logger = { version = "0.11.6", default-features = false }
+
+[dev-dependencies]
+tokio = { version = "1.43", default-features = false, features = [ "time"] }

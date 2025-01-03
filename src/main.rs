@@ -1,4 +1,6 @@
+use broadcast_server::init_logger;
 use clap::Parser;
+use env_logger::Target::Stderr;
 use std::net::SocketAddr;
 
 #[derive(Parser)]
@@ -12,19 +14,9 @@ struct Args {
     logging_level: String,
 }
 
-pub fn init_logger(logging_level: String) {
-    std::env::set_var("RUST_LOG", logging_level);
-    env_logger::Builder::new()
-        .parse_default_env()
-        .format_timestamp(None)
-        .format_level(false)
-        .format_target(false)
-        .init();
-}
-
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     let args = Args::parse();
-    init_logger(args.logging_level);
+    init_logger(args.logging_level, Stderr);
     broadcast_server::run(args.socket).await;
 }
